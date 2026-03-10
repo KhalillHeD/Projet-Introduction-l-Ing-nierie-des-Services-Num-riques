@@ -1,29 +1,39 @@
-import { useEffect, useMemo, useState } from 'react';
-import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
 import {
-  MapPin,
+  GoogleMap,
+  InfoWindowF,
+  MarkerF,
+  useJsApiLoader,
+} from "@react-google-maps/api";
+import { useEffect, useMemo, useState } from "react";
+/// <reference types="@types/google.maps" />
+import {
   Clock,
+  Filter,
+  List,
+  Map as MapIcon,
+  MapPin,
+  Navigation,
   Phone,
   Star,
-  Navigation,
-  Map as MapIcon,
-  List,
-  Filter,
   Upload,
-} from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { Card } from '../components/Card';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
-import { pharmacies, tunisiaGovernorates, type Pharmacy } from '../data/pharmacies';
+} from "lucide-react";
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
+import { Input } from "../components/Input";
+import { useLanguage } from "../contexts/LanguageContext";
+import {
+  pharmacies,
+  tunisiaGovernorates,
+  type Pharmacy,
+} from "../data/pharmacies";
 
 const TUNISIA_CENTER = { lat: 36.8065, lng: 10.1815 };
 const NEARBY_RADIUS_KM = 5;
-const GOOGLE_MAP_LIBRARIES: ('places')[] = ['places'];
+const GOOGLE_MAP_LIBRARIES: "places"[] = ["places"];
 
 function calculateDistanceKm(
   from: { lat: number; lng: number },
-  to: { lat: number; lng: number }
+  to: { lat: number; lng: number },
 ) {
   const earthRadiusKm = 6371;
   const dLat = ((to.lat - from.lat) * Math.PI) / 180;
@@ -46,20 +56,25 @@ interface PharmacyWithGeoMeta extends Pharmacy {
 
 export function Pharmacies() {
   const { t, isRTL } = useLanguage();
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<"map" | "list">("list");
   const [showFilters, setShowFilters] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
-  const [selectedPharmacyId, setSelectedPharmacyId] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedPharmacyId, setSelectedPharmacyId] = useState<string | null>(
+    null,
+  );
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     open24: false,
     openNow: false,
-    governorate: 'All',
+    governorate: "All",
   });
-  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '';
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "";
   const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({
-    id: 'pharmalovo-google-map-script',
+    id: "pharmalovo-google-map-script",
     googleMapsApiKey,
     libraries: GOOGLE_MAP_LIBRARIES,
   });
@@ -68,8 +83,10 @@ export function Pharmacies() {
     if (filters.open24 && !pharmacy.is24Hours) return false;
     if (filters.openNow && !pharmacy.isOpen) return false;
     if (
-      filters.governorate !== 'All' &&
-      !pharmacy.address.toLowerCase().includes(filters.governorate.toLowerCase())
+      filters.governorate !== "All" &&
+      !pharmacy.address
+        .toLowerCase()
+        .includes(filters.governorate.toLowerCase())
     ) {
       return false;
     }
@@ -82,7 +99,8 @@ export function Pharmacies() {
         const distanceFromUser = userLocation
           ? calculateDistanceKm(userLocation, pharmacy.location)
           : null;
-        const isNearby = distanceFromUser !== null && distanceFromUser <= NEARBY_RADIUS_KM;
+        const isNearby =
+          distanceFromUser !== null && distanceFromUser <= NEARBY_RADIUS_KM;
 
         return {
           ...pharmacy,
@@ -101,11 +119,13 @@ export function Pharmacies() {
   }, [filteredPharmacies, userLocation]);
 
   const selectedPharmacy =
-    pharmaciesWithDistance.find((pharmacy) => pharmacy.id === selectedPharmacyId) ?? null;
+    pharmaciesWithDistance.find(
+      (pharmacy) => pharmacy.id === selectedPharmacyId,
+    ) ?? null;
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser.');
+      setLocationError("Geolocation is not supported by your browser.");
       return;
     }
 
@@ -118,13 +138,15 @@ export function Pharmacies() {
         setLocationError(null);
       },
       () => {
-        setLocationError('Location access denied. Showing all pharmacies in Tunisia.');
+        setLocationError(
+          "Location access denied. Showing all pharmacies in Tunisia.",
+        );
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 60000,
-      }
+      },
     );
   }, []);
 
@@ -146,16 +168,16 @@ export function Pharmacies() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex gap-2">
               <Button
-                variant={viewMode === 'list' ? 'primary' : 'outline'}
-                onClick={() => setViewMode('list')}
+                variant={viewMode === "list" ? "primary" : "outline"}
+                onClick={() => setViewMode("list")}
                 className="flex items-center gap-2"
               >
                 <List className="h-5 w-5" />
                 {t.pharmacies.list}
               </Button>
               <Button
-                variant={viewMode === 'map' ? 'primary' : 'outline'}
-                onClick={() => setViewMode('map')}
+                variant={viewMode === "map" ? "primary" : "outline"}
+                onClick={() => setViewMode("map")}
                 className="flex items-center gap-2"
               >
                 <MapIcon className="h-5 w-5" />
@@ -222,18 +244,22 @@ export function Pharmacies() {
             </Card>
           )}
 
-          {viewMode === 'map' ? (
+          {viewMode === "map" ? (
             <Card className="mb-6">
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="px-3 py-1 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-medium">
-                    Nearby pharmacies ({pharmaciesWithDistance.filter((p) => p.isNearby).length})
+                    Nearby pharmacies (
+                    {pharmaciesWithDistance.filter((p) => p.isNearby).length})
                   </span>
                   <span className="px-3 py-1 rounded-full bg-[#FFEBEE] text-[#C62828] font-medium">
-                    Other pharmacies ({pharmaciesWithDistance.filter((p) => !p.isNearby).length})
+                    Other pharmacies (
+                    {pharmaciesWithDistance.filter((p) => !p.isNearby).length})
                   </span>
                   {locationError && (
-                    <span className="text-amber-700 dark:text-amber-400">{locationError}</span>
+                    <span className="text-amber-700 dark:text-amber-400">
+                      {locationError}
+                    </span>
                   )}
                 </div>
 
@@ -244,14 +270,15 @@ export function Pharmacies() {
                         Google Maps API key is missing
                       </h3>
                       <p className="text-amber-700 dark:text-amber-200 mt-2">
-                        Add <code>VITE_GOOGLE_MAPS_API_KEY</code> in your Frontend <code>.env</code>{' '}
-                        file to display the live map.
+                        Add <code>VITE_GOOGLE_MAPS_API_KEY</code> in your
+                        Frontend <code>.env</code> file to display the live map.
                       </p>
                     </div>
                   </div>
                 ) : mapLoadError ? (
                   <div className="aspect-video bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg flex items-center justify-center p-6 text-center text-red-700 dark:text-red-300">
-                    Failed to load Google Maps. Check API key restrictions and billing settings.
+                    Failed to load Google Maps. Check API key restrictions and
+                    billing settings.
                   </div>
                 ) : !isMapLoaded ? (
                   <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300">
@@ -275,9 +302,9 @@ export function Pharmacies() {
                         icon={{
                           path: google.maps.SymbolPath.CIRCLE,
                           scale: 10,
-                          fillColor: '#0D47A1',
+                          fillColor: "#0D47A1",
                           fillOpacity: 1,
-                          strokeColor: '#FFFFFF',
+                          strokeColor: "#FFFFFF",
                           strokeWeight: 3,
                         }}
                       />
@@ -292,9 +319,9 @@ export function Pharmacies() {
                         icon={{
                           path: google.maps.SymbolPath.CIRCLE,
                           scale: pharmacy.isNearby ? 9 : 7,
-                          fillColor: pharmacy.isNearby ? '#2E7D32' : '#D32F2F',
+                          fillColor: pharmacy.isNearby ? "#2E7D32" : "#D32F2F",
                           fillOpacity: pharmacy.isNearby ? 0.95 : 0.8,
-                          strokeColor: '#FFFFFF',
+                          strokeColor: "#FFFFFF",
                           strokeWeight: 2,
                         }}
                       />
@@ -306,14 +333,21 @@ export function Pharmacies() {
                         onCloseClick={() => setSelectedPharmacyId(null)}
                       >
                         <div className="text-sm max-w-[220px]">
-                          <h4 className="font-semibold text-gray-900">{selectedPharmacy.name}</h4>
-                          <p className="text-gray-600 mt-1">{selectedPharmacy.address}</p>
+                          <h4 className="font-semibold text-gray-900">
+                            {selectedPharmacy.name}
+                          </h4>
+                          <p className="text-gray-600 mt-1">
+                            {selectedPharmacy.address}
+                          </p>
                           {selectedPharmacy.distanceFromUser !== null && (
                             <p className="mt-2 font-medium text-[#007BFF]">
-                              {selectedPharmacy.distanceFromUser.toFixed(2)} km from your location
+                              {selectedPharmacy.distanceFromUser.toFixed(2)} km
+                              from your location
                             </p>
                           )}
-                          <p className="mt-1 text-gray-700">{selectedPharmacy.phone}</p>
+                          <p className="mt-1 text-gray-700">
+                            {selectedPharmacy.phone}
+                          </p>
                         </div>
                       </InfoWindowF>
                     )}
@@ -328,8 +362,8 @@ export function Pharmacies() {
                       onClick={() => setSelectedPharmacyId(pharmacy.id)}
                       className={`text-left p-3 rounded-lg border transition-colors duration-200 ${
                         pharmacy.isNearby
-                          ? 'border-[#2E7D32] bg-[#E8F5E9] dark:bg-green-900/20'
-                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                          ? "border-[#2E7D32] bg-[#E8F5E9] dark:bg-green-900/20"
+                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                       }`}
                     >
                       <p className="font-semibold text-gray-900 dark:text-white">
@@ -376,12 +410,17 @@ export function Pharmacies() {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                       <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5 text-[#007BFF]" />
-                      <span>{isRTL ? pharmacy.addressAr : pharmacy.address}</span>
+                      <span>
+                        {isRTL ? pharmacy.addressAr : pharmacy.address}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                       <Phone className="h-4 w-4 flex-shrink-0 text-[#007BFF]" />
-                      <a href={`tel:${pharmacy.phone}`} className="hover:text-[#007BFF]">
+                      <a
+                        href={`tel:${pharmacy.phone}`}
+                        className="hover:text-[#007BFF]"
+                      >
                         {pharmacy.phone}
                       </a>
                     </div>
@@ -417,10 +456,10 @@ export function Pharmacies() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant={pharmacy.isOpen ? 'primary' : 'outline'}
+                      variant={pharmacy.isOpen ? "primary" : "outline"}
                       fullWidth
                     >
-                      {pharmacy.isOpen ? 'View Stock' : 'View Details'}
+                      {pharmacy.isOpen ? "View Stock" : "View Details"}
                     </Button>
                     <Button size="sm" variant="outline">
                       <Navigation className="h-4 w-4" />
@@ -454,11 +493,28 @@ export function Pharmacies() {
               </h3>
               <form className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Pharmacy Name" placeholder="Enter pharmacy name" />
-                  <Input label="License Number" placeholder="Enter license number" />
-                  <Input label="Contact Person" placeholder="Enter contact person name" />
-                  <Input type="tel" label="Phone Number" placeholder="+216 XX XXX XXX" />
-                  <Input type="email" label="Email" placeholder="pharmacy@example.com" />
+                  <Input
+                    label="Pharmacy Name"
+                    placeholder="Enter pharmacy name"
+                  />
+                  <Input
+                    label="License Number"
+                    placeholder="Enter license number"
+                  />
+                  <Input
+                    label="Contact Person"
+                    placeholder="Enter contact person name"
+                  />
+                  <Input
+                    type="tel"
+                    label="Phone Number"
+                    placeholder="+216 XX XXX XXX"
+                  />
+                  <Input
+                    type="email"
+                    label="Email"
+                    placeholder="pharmacy@example.com"
+                  />
                   <select className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
                     <option value="">Select Governorate</option>
                     {tunisiaGovernorates.map((gov) => (
@@ -469,7 +525,10 @@ export function Pharmacies() {
                   </select>
                 </div>
 
-                <Input label="Full Address" placeholder="Enter complete address" />
+                <Input
+                  label="Full Address"
+                  placeholder="Enter complete address"
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -487,10 +546,13 @@ export function Pharmacies() {
                 </div>
 
                 <div className="flex items-start space-x-2 rtl:space-x-reverse">
-                  <input type="checkbox" className="mt-1 w-5 h-5 text-[#007BFF] rounded" />
+                  <input
+                    type="checkbox"
+                    className="mt-1 w-5 h-5 text-[#007BFF] rounded"
+                  />
                   <label className="text-sm text-gray-700 dark:text-gray-300">
-                    I agree to the terms and conditions and confirm that all information provided
-                    is accurate
+                    I agree to the terms and conditions and confirm that all
+                    information provided is accurate
                   </label>
                 </div>
 
