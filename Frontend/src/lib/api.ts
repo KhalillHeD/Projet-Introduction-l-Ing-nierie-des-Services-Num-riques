@@ -13,6 +13,7 @@ export interface Pharmacy {
   latitude?: number;
   longitude?: number;
   isOpen: boolean;
+  is24Hours?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -29,6 +30,21 @@ export interface PharmacyRequest {
   latitude?: number;
   longitude?: number;
   isOpen?: boolean;
+}
+
+export interface Medication {
+  id: string;
+  name: string;
+  genericName?: string;
+  category: string;
+  price: number;
+  stockQuantity: number;
+  isAvailable: boolean;
+  requiresPrescription: boolean;
+  description?: string;
+  manufacturer?: string;
+  expiryDate?: string;
+  pharmacyId?: string;
 }
 
 export const pharmacyAPI = {
@@ -137,5 +153,38 @@ export const pharmacyAPI = {
     if (!response.ok) {
       throw new Error("Failed to delete pharmacy");
     }
+  },
+};
+
+export const medicationAPI = {
+  // Get all medications for a pharmacy
+  getByPharmacy: async (pharmacyId: string): Promise<Medication[]> => {
+    const response = await fetch(
+      `${API_BASE_URL}/pharmacies/${pharmacyId}/medications`,
+    );
+    if (!response.ok) {
+      throw new Error("Failed to fetch medications");
+    }
+    return response.json();
+  },
+
+  // Get all medications
+  getAll: async (): Promise<Medication[]> => {
+    const response = await fetch(`${API_BASE_URL}/medications`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch medications");
+    }
+    return response.json();
+  },
+
+  // Search medications
+  search: async (query: string): Promise<Medication[]> => {
+    const response = await fetch(
+      `${API_BASE_URL}/medications/search?q=${encodeURIComponent(query)}`,
+    );
+    if (!response.ok) {
+      throw new Error("Failed to search medications");
+    }
+    return response.json();
   },
 };
