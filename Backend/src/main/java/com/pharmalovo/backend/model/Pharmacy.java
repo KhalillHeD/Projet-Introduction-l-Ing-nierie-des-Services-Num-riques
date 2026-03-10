@@ -35,7 +35,7 @@ public class Pharmacy {
     private Boolean isOpen = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
+    @JoinColumn(name = "owner_id", nullable = true)
     private Profile owner;
 
     private LocalDateTime createdAt;
