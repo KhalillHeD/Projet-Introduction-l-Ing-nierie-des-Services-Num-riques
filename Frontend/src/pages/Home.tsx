@@ -168,9 +168,8 @@ export function Home() {
             {features.map((feature, index) => (
               <Card
                 key={index}
-                variant="dark"
                 hover
-                className="p-6 rounded-2xl"
+                className="p-6 rounded-2xl bg-slate-800 border border-slate-700 text-white"
               >
                 <feature.icon className="h-8 w-8 text-blue-400 mb-4" />
 
