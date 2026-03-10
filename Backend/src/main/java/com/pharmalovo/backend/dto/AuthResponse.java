@@ -12,5 +12,6 @@ public class AuthResponse {
     private final UUID userId;
     private final String name;
     private final String role;
+    private final String token;
     private final String redirectPath;
 }

@@ -5,6 +5,7 @@ export type AuthUser = {
   name: string;
   email: string;
   role: "customer" | "pharmacy_owner";
+  token: string;
   redirectPath: string;
 };
 
@@ -21,6 +22,7 @@ type AuthContextValue = {
     phone?: string;
   }) => Promise<AuthUser>;
   logout: () => Promise<void>;
+  getAuthHeaders: () => Record<string, string>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -38,6 +40,14 @@ const getApiUrl = (path: string) => {
 
 const getNetworkErrorMessage = () =>
   "Cannot reach backend API. Start backend on http://localhost:8080 or set VITE_API_URL.";
+
+const getAuthHeaders = (user: AuthUser | null) => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (user?.token) {
+    headers.Authorization = `Bearer ${user.token}`;
+  }
+  return headers;
+};
 
 const parseApiResponse = async (
   response: Response,
@@ -111,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: typeof data.name === "string" ? data.name : email,
       email,
       role: data.role === "pharmacy_owner" ? "pharmacy_owner" : "customer",
+      token: typeof data.token === "string" ? data.token : "",
       redirectPath:
         typeof data.redirectPath === "string"
           ? data.redirectPath
@@ -149,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: typeof data.name === "string" ? data.name : payload.name,
       email: payload.email,
       role: data.role === "pharmacy_owner" ? "pharmacy_owner" : "customer",
+      token: typeof data.token === "string" ? data.token : "",
       redirectPath:
         typeof data.redirectPath === "string"
           ? data.redirectPath
@@ -177,7 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const value = useMemo(() => ({ user, login, register, logout }), [user]);
+  const value = useMemo(() => ({ user, login, register, logout, getAuthHeaders: () => getAuthHeaders(user) }), [user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

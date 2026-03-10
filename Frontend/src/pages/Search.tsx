@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search as SearchIcon, Filter, MapPin, Bell, ShoppingCart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -8,6 +9,34 @@ import { medications, medicationCategories } from '../data/medications';
 
 export function Search() {
   const { t, isRTL } = useLanguage();
+  const { user, getAuthHeaders } = useAuth();
+  const [orderingId, setOrderingId] = useState<string | null>(null);
+
+  const handleOrder = async (medicationId: string) => {
+    if (!user) {
+      alert('Please login to order');
+      return;
+    }
+
+    setOrderingId(medicationId);
+    try {
+      const response = await fetch('/api/orders?medicationId=' + medicationId + '&quantity=1', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        alert('Order placed successfully!');
+      } else {
+        const error = await response.text();
+        alert('Order failed: ' + error);
+      }
+    } catch (error) {
+      alert('Order failed: ' + error);
+    } finally {
+      setOrderingId(null);
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -232,9 +261,14 @@ export function Search() {
 
                         <div className="flex gap-2">
                           {medication.availability === 'in-stock' ? (
-                            <Button size="sm" className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              className="flex items-center gap-2"
+                              onClick={() => handleOrder(medication.id)}
+                              disabled={orderingId === medication.id}
+                            >
                               <ShoppingCart className="h-4 w-4" />
-                              {t.search.order}
+                              {orderingId === medication.id ? 'Ordering...' : t.search.order}
                             </Button>
                           ) : (
                             <Button size="sm" variant="outline" className="flex items-center gap-2">

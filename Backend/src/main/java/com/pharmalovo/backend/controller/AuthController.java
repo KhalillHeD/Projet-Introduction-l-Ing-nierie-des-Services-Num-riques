@@ -28,6 +28,6 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<AuthResponse> logout() {
-        return ResponseEntity.ok(new AuthResponse("Logout successful", null, null, null, null));
+        return ResponseEntity.ok(new AuthResponse("Logout successful", null, null, null, null, "/"));
     }
 }

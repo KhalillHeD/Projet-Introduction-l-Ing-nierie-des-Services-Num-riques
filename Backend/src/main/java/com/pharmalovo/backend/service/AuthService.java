@@ -3,20 +3,26 @@ package com.pharmalovo.backend.service;
 import com.pharmalovo.backend.dto.AuthResponse;
 import com.pharmalovo.backend.dto.LoginRequest;
 import com.pharmalovo.backend.dto.RegisterRequest;
+import com.pharmalovo.backend.model.Profile;
 import com.pharmalovo.backend.model.User;
 import com.pharmalovo.backend.model.UserRole;
+import com.pharmalovo.backend.repository.ProfileRepository;
 import com.pharmalovo.backend.repository.UserRepository;
+import com.pharmalovo.backend.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
+    private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final JwtUtil jwtUtil;
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         // 1) Prevent duplicate accounts by email or username (full name).
@@ -42,11 +48,24 @@ public class AuthService {
 
         // 5) Save user and return role-based redirect information.
         User saved = userRepository.save(user);
+
+        // 6) Create corresponding profile
+        Profile profile = Profile.builder()
+                .id(saved.getId())
+                .fullName(saved.getName())
+                .role(Profile.UserRole.valueOf(saved.getRole().name()))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        profileRepository.save(profile);
+
+        String token = jwtUtil.generateToken(saved.getId(), saved.getEmail(), saved.getRole().name().toLowerCase());
         return new AuthResponse(
                 "Registration successful",
                 saved.getId(),
-            saved.getName(),
+                saved.getName(),
                 saved.getRole().name().toLowerCase(),
+                token,
                 role == UserRole.PHARMACY_OWNER ? "/pharmacy-owner/dashboard" : "/customer/dashboard"
         );
     }
@@ -62,11 +81,13 @@ public class AuthService {
         }
 
         // 3) Return role-based redirect information.
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name().toLowerCase());
         return new AuthResponse(
                 "Login successful",
                 user.getId(),
-            user.getName(),
+                user.getName(),
                 user.getRole().name().toLowerCase(),
+                token,
                 user.getRole() == UserRole.PHARMACY_OWNER ? "/pharmacy-owner/dashboard" : "/customer/dashboard"
         );
     }
