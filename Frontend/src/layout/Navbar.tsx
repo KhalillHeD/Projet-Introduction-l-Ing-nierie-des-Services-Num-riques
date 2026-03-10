@@ -83,12 +83,12 @@ export function Navbar() {
 
             {user ? (
               <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Link
+                  to="/dashboard"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-[#007BFF] dark:hover:text-[#4da3ff] transition-colors duration-200"
+                >
                   {user.name}
-                </span>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  {t.nav.logout}
-                </Button>
+                </Link>
               </div>
             ) : (
               <>

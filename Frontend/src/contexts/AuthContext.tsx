@@ -103,7 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const data = await parseApiResponse(response);
     if (!response.ok) {
-      throw new Error(readErrorMessage(data, "Login failed"));
+      throw new Error(
+        readErrorMessage(data, `Login failed (HTTP ${response.status})`),
+      );
     }
 
     const nextUser: AuthUser = {
@@ -141,7 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const data = await parseApiResponse(response);
     if (!response.ok) {
-      throw new Error(readErrorMessage(data, "Registration failed"));
+      throw new Error(
+        readErrorMessage(data, `Registration failed (HTTP ${response.status})`),
+      );
     }
 
     const nextUser: AuthUser = {
