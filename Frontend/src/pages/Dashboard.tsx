@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import {
   Package,
@@ -82,32 +82,33 @@ export function Dashboard() {
     "Omeprazole 20mg",
   ];
 
-  const orders = [
-    {
-      id: "#12345",
-      medication: "Paracetamol 500mg",
-      pharmacy: "Pharmacie Centrale",
-      status: "Delivered",
-      date: "2026-02-15",
-      price: 3.5,
-    },
-    {
-      id: "#12344",
-      medication: "Insulin Glargine",
-      pharmacy: "Pharmacie du Lac",
-      status: "In Transit",
-      date: "2026-02-18",
-      price: 45.0,
-    },
-    {
-      id: "#12343",
-      medication: "Amoxicillin 500mg",
-      pharmacy: "Pharmacie de la Médina",
-      status: "Processing",
-      date: "2026-02-18",
-      price: 12.0,
-    },
-  ];
+  // dynamic orders fetched from backend
+  type Order = {
+    id: string;
+    medication: string;
+    pharmacy: string;
+    status: string;
+    date: string;
+    price: number;
+  };
+
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  // load orders when component mounts or userType changes
+  useEffect(() => {
+    if (!user) return;
+
+    const endpoint =
+      userType === "customer" ? "/api/orders" : "/api/orders/pharmacy";
+
+    fetch(endpoint, { headers: getAuthHeaders() })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch orders");
+        return res.json();
+      })
+      .then((data: Order[]) => setOrders(data))
+      .catch((err) => console.error("Error loading orders", err));
+  }, [userType, user]);
 
   const notifications = [
     {

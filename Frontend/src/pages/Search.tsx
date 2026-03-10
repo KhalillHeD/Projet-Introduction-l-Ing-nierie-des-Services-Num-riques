@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search as SearchIcon, Filter, MapPin, Bell, ShoppingCart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { medications, medicationCategories } from '../data/medications';
+import { medicationCategories } from '../data/medications';
 
 export function Search() {
   const { t, isRTL } = useLanguage();
@@ -45,6 +45,24 @@ export function Search() {
     sortBy: 'relevance',
     maxDistance: 10,
   });
+  const [medications, setMedications] = useState<any[]>([]);
+
+  // load medications from backend and normalize availability field
+  useEffect(() => {
+    fetch('/api/medications', { headers: getAuthHeaders() })
+      .then((res) => res.json())
+      .then((data: any[]) => {
+        const normalized = data.map((m) => {
+          let availability: string = 'out-of-stock';
+          if (m.isAvailable) {
+            availability = m.stockQuantity <= 5 ? 'low-stock' : 'in-stock';
+          }
+          return { ...m, availability };
+        });
+        setMedications(normalized);
+      })
+      .catch((err) => console.error('Failed to fetch medications', err));
+  }, [getAuthHeaders]);
 
   const filteredMedications = medications.filter((med) => {
     const matchesSearch =

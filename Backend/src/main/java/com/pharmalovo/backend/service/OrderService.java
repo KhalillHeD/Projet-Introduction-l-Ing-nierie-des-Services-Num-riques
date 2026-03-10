@@ -68,4 +68,35 @@ public class OrderService {
 
         return orderRepository.save(order);
     }
+
+    // ---------- NEW METHODS FOR RETRIEVING ORDERS ----------
+    @Transactional(readOnly = true)
+    public List<com.pharmalovo.backend.dto.OrderDTO> getOrdersForCustomer(UUID customerId) {
+        return orderRepository.findByCustomerId(customerId).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.pharmalovo.backend.dto.OrderDTO> getOrdersForPharmacy(UUID pharmacyId) {
+        return orderRepository.findByPharmacyId(pharmacyId).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    private com.pharmalovo.backend.dto.OrderDTO toDto(Order order) {
+        // pick first item to represent medication
+        String medicationName = null;
+        if (order.getItems() != null && !order.getItems().isEmpty()) {
+            medicationName = order.getItems().get(0).getMedication().getName();
+        }
+        return com.pharmalovo.backend.dto.OrderDTO.builder()
+                .id(order.getId())
+                .medication(medicationName)
+                .pharmacy(order.getPharmacy() != null ? order.getPharmacy().getName() : null)
+                .status(order.getStatus() != null ? order.getStatus().name() : null)
+                .date(order.getCreatedAt())
+                .price(order.getTotalAmount())
+                .build();
+    }
 }
