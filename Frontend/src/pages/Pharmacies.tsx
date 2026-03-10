@@ -13,12 +13,12 @@ import {
   MapPin,
   Navigation,
   Phone,
-  Upload,
 } from "lucide-react";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { useLanguage } from "../contexts/LanguageContext";
+import { medications as staticMedications } from "../data/medications";
 import {
   pharmacies as staticPharmacies,
   tunisiaGovernorates,
@@ -70,9 +70,9 @@ export function Pharmacies() {
     lat: number;
     lng: number;
   } | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMedicationModal, setShowMedicationModal] = useState(false);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loadingMedications, setLoadingMedications] = useState(false);
   const [filters, setFilters] = useState({
@@ -233,10 +233,37 @@ export function Pharmacies() {
 
   const handleViewStock = async (pharmacy: Pharmacy) => {
     setSelectedPharmacyId(pharmacy.id);
+    setShowMedicationModal(true);
     setLoadingMedications(true);
     try {
-      const meds = await medicationAPI.getByPharmacy(pharmacy.id);
-      setMedications(meds);
+      // Check if this is a static pharmacy (ID is numeric string 1-6)
+      const isStaticPharmacy = /^[1-6]$/.test(pharmacy.id);
+
+      if (isStaticPharmacy) {
+        // Use static medications for static pharmacies
+        const pharmacyMeds = staticMedications
+          .filter((med) => med.pharmacyId === pharmacy.id)
+          .map((med) => ({
+            id: med.id,
+            name: med.name,
+            genericName: med.genericName,
+            category: med.category,
+            price: med.price,
+            stockQuantity:
+              med.availability === "in-stock"
+                ? 50
+                : med.availability === "low-stock"
+                  ? 5
+                  : 0,
+            isAvailable: med.availability !== "out-of-stock",
+            requiresPrescription: med.requires_prescription,
+          }));
+        setMedications(pharmacyMeds);
+      } else {
+        // Fetch from API for backend pharmacies
+        const meds = await medicationAPI.getByPharmacy(pharmacy.id);
+        setMedications(meds);
+      }
     } catch (err) {
       console.error("Error fetching medications:", err);
       setMedications([]);
@@ -247,7 +274,6 @@ export function Pharmacies() {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser.");
       return;
     }
 
@@ -257,12 +283,9 @@ export function Pharmacies() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
-        setLocationError(null);
       },
       () => {
-        setLocationError(
-          "Location access denied. Showing all pharmacies in Tunisia.",
-        );
+        // Location access denied, continue without user location
       },
       {
         enableHighAccuracy: true,
@@ -378,11 +401,6 @@ export function Pharmacies() {
                     Other pharmacies (
                     {pharmaciesWithDistance.filter((p) => !p.isNearby).length})
                   </span>
-                  {locationError && (
-                    <span className="text-amber-700 dark:text-amber-400">
-                      {locationError}
-                    </span>
-                  )}
                 </div>
 
                 {!googleMapsApiKey ? (
@@ -468,7 +486,7 @@ export function Pharmacies() {
                           }}
                           onCloseClick={() => setSelectedPharmacyId(null)}
                         >
-                          <div className="text-sm max-w-[220px]">
+                          <div className="text-sm max-w-[240px]">
                             <h4 className="font-semibold text-gray-900">
                               {selectedPharmacy.name}
                             </h4>
@@ -484,6 +502,12 @@ export function Pharmacies() {
                             <p className="mt-1 text-gray-700">
                               {selectedPharmacy.phone}
                             </p>
+                            <button
+                              onClick={() => handleViewStock(selectedPharmacy)}
+                              className="mt-3 w-full px-3 py-2 bg-[#007BFF] text-white text-sm font-medium rounded-lg hover:bg-[#0056b3] transition-colors duration-200"
+                            >
+                              View Stock
+                            </button>
                           </div>
                         </InfoWindowF>
                       )}
@@ -492,28 +516,39 @@ export function Pharmacies() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {pharmaciesWithDistance.slice(0, 6).map((pharmacy) => (
-                    <button
+                    <div
                       key={`nearby-${pharmacy.id}`}
-                      type="button"
-                      onClick={() => setSelectedPharmacyId(pharmacy.id)}
-                      className={`text-left p-3 rounded-lg border transition-colors duration-200 ${
+                      className={`p-3 rounded-lg border transition-colors duration-200 ${
                         pharmacy.isNearby
                           ? "border-[#2E7D32] bg-[#E8F5E9] dark:bg-green-900/20"
                           : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                       }`}
                     >
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {pharmacy.name}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {pharmacy.address}
-                      </p>
-                      {pharmacy.distanceFromUser !== null && (
-                        <p className="text-sm text-[#007BFF] mt-1 font-medium">
-                          {pharmacy.distanceFromUser.toFixed(2)} km away
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPharmacyId(pharmacy.id)}
+                        className="text-left w-full"
+                      >
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {pharmacy.name}
                         </p>
-                      )}
-                    </button>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {pharmacy.address}
+                        </p>
+                        {pharmacy.distanceFromUser !== null && (
+                          <p className="text-sm text-[#007BFF] mt-1 font-medium">
+                            {pharmacy.distanceFromUser.toFixed(2)} km away
+                          </p>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleViewStock(pharmacy)}
+                        className="mt-3 w-full px-3 py-2 bg-[#007BFF] text-white text-sm font-medium rounded-lg hover:bg-[#0056b3] transition-colors duration-200"
+                      >
+                        View Stock
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -686,21 +721,6 @@ export function Pharmacies() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Upload Logo
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-[#007BFF] transition-colors duration-200">
-                    <Upload className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Click to upload or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      PNG, JPG up to 5MB
-                    </p>
-                  </div>
-                </div>
-
                 <div className="flex items-start space-x-2 rtl:space-x-reverse">
                   <input
                     type="checkbox"
@@ -732,7 +752,7 @@ export function Pharmacies() {
       </section>
 
       {/* Medication Stock Modal */}
-      {selectedPharmacy && (
+      {selectedPharmacy && showMedicationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -746,7 +766,10 @@ export function Pharmacies() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setSelectedPharmacyId(null)}
+                  onClick={() => {
+                    setSelectedPharmacyId(null);
+                    setShowMedicationModal(false);
+                  }}
                   className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   <span className="text-2xl">&times;</span>
