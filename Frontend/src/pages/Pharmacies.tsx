@@ -19,7 +19,10 @@ import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { useLanguage } from "../contexts/LanguageContext";
-import { tunisiaGovernorates } from "../data/pharmacies";
+import {
+  pharmacies as staticPharmacies,
+  tunisiaGovernorates,
+} from "../data/pharmacies";
 import {
   Medication,
   medicationAPI,
@@ -150,10 +153,51 @@ export function Pharmacies() {
   const fetchPharmacies = async () => {
     try {
       setLoading(true);
-      const data = await pharmacyAPI.getAll();
-      setPharmacies(data);
+
+      // Convert static pharmacies to API format
+      const convertedStaticPharmacies: Pharmacy[] = staticPharmacies.map(
+        (p) => ({
+          id: p.id,
+          name: p.name,
+          address: p.address,
+          city: p.address.split(",")[1]?.trim() || "Tunis",
+          phone: p.phone,
+          latitude: p.location.lat,
+          longitude: p.location.lng,
+          isOpen: p.isOpen,
+          is24Hours: p.is24Hours,
+        }),
+      );
+
+      // Fetch API pharmacies
+      const apiPharmacies = await pharmacyAPI.getAll();
+
+      // Merge static and API pharmacies, removing duplicates by ID
+      const allPharmacies = [...convertedStaticPharmacies];
+      apiPharmacies.forEach((apiPharmacy) => {
+        if (!allPharmacies.find((p) => p.id === apiPharmacy.id)) {
+          allPharmacies.push(apiPharmacy);
+        }
+      });
+
+      setPharmacies(allPharmacies);
     } catch (err) {
       console.error("Error fetching pharmacies:", err);
+      // If API fails, at least show static pharmacies
+      const convertedStaticPharmacies: Pharmacy[] = staticPharmacies.map(
+        (p) => ({
+          id: p.id,
+          name: p.name,
+          address: p.address,
+          city: p.address.split(",")[1]?.trim() || "Tunis",
+          phone: p.phone,
+          latitude: p.location.lat,
+          longitude: p.location.lng,
+          isOpen: p.isOpen,
+          is24Hours: p.is24Hours,
+        }),
+      );
+      setPharmacies(convertedStaticPharmacies);
     } finally {
       setLoading(false);
     }
